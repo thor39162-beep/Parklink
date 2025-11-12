@@ -90,15 +90,6 @@ export default function SpaceDetailPage() {
     }
   }, [startDate, startTime, endDate, endTime, space])
 
-  const formatTimeAmPm = (time24: string): string => {
-    if (!time24) return ""
-    const [hours, minutes] = time24.split(":")
-    const hour = Number.parseInt(hours)
-    const ampm = hour >= 12 ? "PM" : "AM"
-    const hour12 = hour % 12 || 12
-    return `${hour12.toString().padStart(2, "0")}:${minutes} ${ampm}`
-  }
-
   const validateDateTime = (date: string, time: string, isEndTime = false): string | null => {
     if (!space || !date || !time) return null
 
@@ -122,12 +113,11 @@ export default function SpaceDetailPage() {
       return `Booking date cannot be after ${new Date(availToDateStr).toLocaleDateString()}`
     }
 
-    // Check time constraints
     if (time < availFromTime) {
-      return `Booking time must be at or after ${formatTimeAmPm(availFromTime)}`
+      return `Booking time must be at or after ${availFromTime}`
     }
     if (isEndTime && time > availToTime) {
-      return `Booking end time must be at or before ${formatTimeAmPm(availToTime)}`
+      return `Booking end time must be at or before ${availToTime}`
     }
 
     return null
@@ -321,7 +311,7 @@ export default function SpaceDetailPage() {
                     <Clock className="w-5 h-5 text-amber-600" />
                     <div>
                       <p className="text-sm text-amber-700 dark:text-amber-300">
-                        {formatTimeAmPm(space.availability_time_from)} to {formatTimeAmPm(space.availability_time_to)}
+                        {space.availability_time_from} to {space.availability_time_to}
                       </p>
                     </div>
                   </div>
@@ -388,9 +378,7 @@ export default function SpaceDetailPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Start Time ({formatTimeAmPm(startTime) || "HH:MM AM/PM"})
-                  </label>
+                  <label className="text-sm font-medium">Start Time</label>
                   <Input
                     type="time"
                     value={startTime}
@@ -414,7 +402,7 @@ export default function SpaceDetailPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">End Time ({formatTimeAmPm(endTime) || "HH:MM AM/PM"})</label>
+                  <label className="text-sm font-medium">End Time</label>
                   <Input
                     type="time"
                     value={endTime}

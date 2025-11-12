@@ -80,6 +80,46 @@ export default function OwnerDashboard() {
 
         setUserName(profileData?.full_name || "User")
 
+        const { data: confirmedBookingsData, error: confirmedError } = await supabase
+          .from("bookings")
+          .select()
+          .eq("owner_id", authData.user.id)
+          .eq("status", "confirmed")
+          .order("start_time", { ascending: true })
+
+        if (confirmedError) throw confirmedError
+
+        const formattedConfirmedBookings = await Promise.all(
+          (confirmedBookingsData || []).map(async (booking: any) => {
+            const { data: seeker } = await supabase
+              .from("users_profile")
+              .select("full_name, contact_number")
+              .eq("id", booking.seeker_id)
+              .single()
+
+            const { data: space } = await supabase
+              .from("parking_spaces")
+              .select("title")
+              .eq("id", booking.space_id)
+              .single()
+
+            return {
+              id: booking.id,
+              space_id: booking.space_id,
+              space_title: space?.title || "Unknown Space",
+              seeker_id: booking.seeker_id,
+              seeker_name: seeker?.full_name || "Unknown User",
+              seeker_contact: seeker?.contact_number || "N/A",
+              start_time: booking.start_time,
+              end_time: booking.end_time,
+              total_price: booking.total_price,
+              status: booking.status,
+            }
+          }),
+        )
+
+        setBookedBookings(formattedConfirmedBookings)
+
         const { data: spacesData, error: spacesError } = await supabase
           .from("parking_spaces")
           .select("*")
@@ -87,7 +127,11 @@ export default function OwnerDashboard() {
           .order("created_at", { ascending: false })
 
         if (spacesError) throw spacesError
-        setSpaces(spacesData || [])
+
+        const confirmedBookingSpaceIds = new Set((formattedConfirmedBookings || []).map((b) => b.space_id))
+        const availableSpaces = (spacesData || []).filter((space) => !confirmedBookingSpaceIds.has(space.id))
+
+        setSpaces(availableSpaces)
 
         const { data: bookingsData, error: bookingsError } = await supabase
           .from("bookings")
@@ -128,46 +172,6 @@ export default function OwnerDashboard() {
         )
 
         setPendingBookings(formattedBookings)
-
-        const { data: confirmedBookingsData, error: confirmedError } = await supabase
-          .from("bookings")
-          .select()
-          .eq("owner_id", authData.user.id)
-          .eq("status", "confirmed")
-          .order("start_time", { ascending: true })
-
-        if (confirmedError) throw confirmedError
-
-        const formattedConfirmedBookings = await Promise.all(
-          (confirmedBookingsData || []).map(async (booking: any) => {
-            const { data: seeker } = await supabase
-              .from("users_profile")
-              .select("full_name, contact_number")
-              .eq("id", booking.seeker_id)
-              .single()
-
-            const { data: space } = await supabase
-              .from("parking_spaces")
-              .select("title")
-              .eq("id", booking.space_id)
-              .single()
-
-            return {
-              id: booking.id,
-              space_id: booking.space_id,
-              space_title: space?.title || "Unknown Space",
-              seeker_id: booking.seeker_id,
-              seeker_name: seeker?.full_name || "Unknown User",
-              seeker_contact: seeker?.contact_number || "N/A",
-              start_time: booking.start_time,
-              end_time: booking.end_time,
-              total_price: booking.total_price,
-              status: booking.status,
-            }
-          }),
-        )
-
-        setBookedBookings(formattedConfirmedBookings)
       } catch (err: any) {
         setError(err.message || "Failed to load data")
       } finally {
@@ -316,7 +320,7 @@ export default function OwnerDashboard() {
           <div className="mb-12">
             <div className="flex items-center mb-6">
               <CheckCircle className="w-6 h-6 mr-3 text-green-600" />
-              <h2 className="text-2xl font-bold">Booked Slots</h2>
+              <h2 className="text-2xl font-bold">Booking Received</h2>
               <span className="ml-3 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
                 {bookedBookings.length}
               </span>
