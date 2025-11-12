@@ -81,7 +81,7 @@ export function MapView({ locations, selectedLocation, onSelectLocation }: MapVi
         ctx.fillStyle = "#000"
         ctx.font = "12px Arial"
         ctx.textAlign = "center"
-        ctx.fillText(`$${location.price_per_hour}`, x, y + 16)
+        ctx.fillText(`₹${location.price_per_hour}`, x, y + 16)
       })
     }
 
@@ -109,7 +109,7 @@ export function MapView({ locations, selectedLocation, onSelectLocation }: MapVi
             }`}
           >
             <p className="font-semibold text-sm">{location.title}</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">${location.price_per_hour}/hr</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">₹{location.price_per_hour}/hr</p>
           </button>
         ))}
       </div>

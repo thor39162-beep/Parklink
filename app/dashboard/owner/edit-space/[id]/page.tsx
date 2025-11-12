@@ -2,16 +2,21 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 
-export default function AddSpacePage() {
+export default function EditSpacePage() {
+  const router = useRouter()
+  const params = useParams()
+  const spaceId = params.id as string
+  const supabase = createClient()
+
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [address, setAddress] = useState("")
@@ -24,14 +29,42 @@ export default function AddSpacePage() {
   const [pricePerHour, setPricePerHour] = useState("")
   const [pricePerDay, setPricePerDay] = useState("")
   const [capacity, setCapacity] = useState("1")
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
-  const supabase = createClient()
+
+  useEffect(() => {
+    const fetchSpace = async () => {
+      try {
+        const { data, error: fetchError } = await supabase.from("parking_spaces").select("*").eq("id", spaceId).single()
+
+        if (fetchError) throw fetchError
+
+        setTitle(data.title || "")
+        setDescription(data.description || "")
+        setAddress(data.address || "")
+        setGoogleMapsLink(data.google_maps_link || "")
+        setContactNumber(data.contact_number || "")
+        setAvailabilityDateFrom(data.availability_date_from || "")
+        setAvailabilityDateTo(data.availability_date_to || "")
+        setAvailabilityTimeFrom(data.availability_time_from || "")
+        setAvailabilityTimeTo(data.availability_time_to || "")
+        setPricePerHour(data.price_per_hour?.toString() || "")
+        setPricePerDay(data.price_per_day?.toString() || "")
+        setCapacity(data.capacity?.toString() || "1")
+      } catch (err: any) {
+        setError(err.message || "Failed to load space")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSpace()
+  }, [spaceId, supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    setSubmitting(true)
     setError(null)
 
     try {
@@ -41,29 +74,47 @@ export default function AddSpacePage() {
         return
       }
 
-      const { error: insertError } = await supabase.from("parking_spaces").insert({
-        owner_id: authData.user.id,
-        title,
-        description,
-        address,
-        google_maps_link: googleMapsLink,
-        contact_number: contactNumber,
-        availability_date_from: availabilityDateFrom,
-        availability_date_to: availabilityDateTo,
-        availability_time_from: availabilityTimeFrom,
-        availability_time_to: availabilityTimeTo,
-        price_per_hour: Number.parseFloat(pricePerHour),
-        price_per_day: pricePerDay ? Number.parseFloat(pricePerDay) : null,
-        capacity: Number.parseInt(capacity),
-      })
+      const { error: updateError } = await supabase
+        .from("parking_spaces")
+        .update({
+          title,
+          description,
+          address,
+          google_maps_link: googleMapsLink,
+          contact_number: contactNumber,
+          availability_date_from: availabilityDateFrom,
+          availability_date_to: availabilityDateTo,
+          availability_time_from: availabilityTimeFrom,
+          availability_time_to: availabilityTimeTo,
+          price_per_hour: Number.parseFloat(pricePerHour),
+          price_per_day: pricePerDay ? Number.parseFloat(pricePerDay) : null,
+          capacity: Number.parseInt(capacity),
+        })
+        .eq("id", spaceId)
+        .eq("owner_id", authData.user.id)
 
-      if (insertError) throw insertError
+      if (updateError) throw updateError
       router.push("/dashboard/owner")
     } catch (err: any) {
-      setError(err.message || "Failed to create space")
+      setError(err.message || "Failed to update space")
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+        <Navbar userType="owner" />
+        <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-gray-500">Loading...</p>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -73,8 +124,8 @@ export default function AddSpacePage() {
       <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">List a New Parking Space</CardTitle>
-            <CardDescription>Fill in the details about your parking space</CardDescription>
+            <CardTitle className="text-2xl">Edit Parking Space</CardTitle>
+            <CardDescription>Update the details of your parking space</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -88,7 +139,7 @@ export default function AddSpacePage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
-                  disabled={loading}
+                  disabled={submitting}
                 />
               </div>
 
@@ -98,7 +149,7 @@ export default function AddSpacePage() {
                   placeholder="Describe your parking space..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  disabled={loading}
+                  disabled={submitting}
                   rows={4}
                 />
               </div>
@@ -111,7 +162,7 @@ export default function AddSpacePage() {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   required
-                  disabled={loading}
+                  disabled={submitting}
                 />
               </div>
 
@@ -123,7 +174,7 @@ export default function AddSpacePage() {
                   value={googleMapsLink}
                   onChange={(e) => setGoogleMapsLink(e.target.value)}
                   required
-                  disabled={loading}
+                  disabled={submitting}
                 />
               </div>
 
@@ -135,7 +186,7 @@ export default function AddSpacePage() {
                   value={contactNumber}
                   onChange={(e) => setContactNumber(e.target.value)}
                   required
-                  disabled={loading}
+                  disabled={submitting}
                 />
               </div>
 
@@ -149,7 +200,7 @@ export default function AddSpacePage() {
                       value={availabilityDateFrom}
                       onChange={(e) => setAvailabilityDateFrom(e.target.value)}
                       required
-                      disabled={loading}
+                      disabled={submitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -159,7 +210,7 @@ export default function AddSpacePage() {
                       value={availabilityDateTo}
                       onChange={(e) => setAvailabilityDateTo(e.target.value)}
                       required
-                      disabled={loading}
+                      disabled={submitting}
                     />
                   </div>
                 </div>
@@ -175,7 +226,7 @@ export default function AddSpacePage() {
                       value={availabilityTimeFrom}
                       onChange={(e) => setAvailabilityTimeFrom(e.target.value)}
                       required
-                      disabled={loading}
+                      disabled={submitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -185,7 +236,7 @@ export default function AddSpacePage() {
                       value={availabilityTimeTo}
                       onChange={(e) => setAvailabilityTimeTo(e.target.value)}
                       required
-                      disabled={loading}
+                      disabled={submitting}
                     />
                   </div>
                 </div>
@@ -201,7 +252,7 @@ export default function AddSpacePage() {
                     value={pricePerHour}
                     onChange={(e) => setPricePerHour(e.target.value)}
                     required
-                    disabled={loading}
+                    disabled={submitting}
                   />
                 </div>
                 <div className="space-y-2">
@@ -212,7 +263,7 @@ export default function AddSpacePage() {
                     placeholder="400.00"
                     value={pricePerDay}
                     onChange={(e) => setPricePerDay(e.target.value)}
-                    disabled={loading}
+                    disabled={submitting}
                   />
                 </div>
               </div>
@@ -225,12 +276,12 @@ export default function AddSpacePage() {
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
                   required
-                  disabled={loading}
+                  disabled={submitting}
                 />
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
-                {loading ? "Creating..." : "Create Listing"}
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={submitting}>
+                {submitting ? "Updating..." : "Update Listing"}
               </Button>
             </form>
           </CardContent>

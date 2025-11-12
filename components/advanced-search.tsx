@@ -66,7 +66,7 @@ export function AdvancedSearch({ onSearch, onClose }: AdvancedSearchProps) {
         </div>
 
         <div className="space-y-3">
-          <label className="text-sm font-medium">Max Price per Hour: ${maxPrice}</label>
+          <label className="text-sm font-medium">Max Price per Hour: ₹{maxPrice}</label>
           <Slider
             value={[maxPrice]}
             onValueChange={(value) => setMaxPrice(value[0])}

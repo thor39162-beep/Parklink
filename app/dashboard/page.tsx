@@ -74,8 +74,16 @@ export default function SeekerDashboard() {
           .order("created_at", { ascending: false })
 
         if (spacesError) throw spacesError
-        setSpaces(spacesData || [])
-        setFilteredSpaces(spacesData || [])
+
+        let availableSpaces = spacesData || []
+
+        const { data: bookedSpaces } = await supabase.from("bookings").select("space_id").eq("status", "confirmed")
+
+        const bookedSpaceIds = new Set(bookedSpaces?.map((b) => b.space_id) || [])
+        availableSpaces = availableSpaces.filter((space) => !bookedSpaceIds.has(space.id))
+
+        setSpaces(availableSpaces)
+        setFilteredSpaces(availableSpaces)
 
         const { data: bookingsData, error: bookingsError } = await supabase
           .from("bookings")
@@ -204,7 +212,7 @@ export default function SeekerDashboard() {
                     </div>
                     <div className="text-sm">
                       <p className="text-gray-600 dark:text-gray-400">Total Price</p>
-                      <p className="font-semibold">${booking.total_price.toFixed(2)}</p>
+                      <p className="font-semibold">₹{booking.total_price.toFixed(2)}</p>
                     </div>
                     {booking.status === "pending" && (
                       <p className="text-xs text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
@@ -284,11 +292,11 @@ export default function SeekerDashboard() {
                     <div className="flex gap-4">
                       <div className="flex items-center">
                         <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
-                        <span className="font-semibold">${space.price_per_hour}</span>
+                        <span className="font-semibold">₹{space.price_per_hour}</span>
                         <span className="text-sm text-gray-600">/hr</span>
                       </div>
                       {space.price_per_day && (
-                        <div className="flex items-center text-sm text-gray-600">${space.price_per_day}/day</div>
+                        <div className="flex items-center text-sm text-gray-600">₹{space.price_per_day}/day</div>
                       )}
                     </div>
                     <div className="text-sm text-gray-600">

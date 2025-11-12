@@ -45,8 +45,16 @@ export default function ExplorePage() {
           .eq("is_available", true)
 
         if (spacesError) throw spacesError
-        setSpaces(spacesData || [])
-        setFilteredSpaces(spacesData || [])
+
+        let availableSpaces = spacesData || []
+
+        const { data: bookedSpaces } = await supabase.from("bookings").select("space_id").eq("status", "confirmed")
+
+        const bookedSpaceIds = new Set(bookedSpaces?.map((b) => b.space_id) || [])
+        availableSpaces = availableSpaces.filter((space) => !bookedSpaceIds.has(space.id))
+
+        setSpaces(availableSpaces)
+        setFilteredSpaces(availableSpaces)
 
         // Get favorites
         const { data: authData } = await supabase.auth.getUser()
@@ -193,7 +201,7 @@ export default function ExplorePage() {
                           <div className="flex gap-4 text-sm">
                             <div className="flex items-center">
                               <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
-                              <span className="font-semibold">${space.price_per_hour}</span>
+                              <span className="font-semibold">₹{space.price_per_hour}</span>
                               <span className="text-gray-600">/hr</span>
                             </div>
                             <div className="text-gray-600">

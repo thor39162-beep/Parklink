@@ -150,7 +150,7 @@ export default function BookingsPage() {
                       <DollarSign className="w-5 h-5 text-gray-400 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Total Price</p>
-                        <p className="font-semibold text-sm">${booking.total_price.toFixed(2)}</p>
+                        <p className="font-semibold text-sm">₹{booking.total_price.toFixed(2)}</p>
                       </div>
                     </div>
                     <div className="flex items-start space-x-3">

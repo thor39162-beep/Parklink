@@ -130,11 +130,11 @@ export default function FavoritesPage() {
                     <div className="flex gap-4">
                       <div className="flex items-center">
                         <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
-                        <span className="font-semibold">${space.price_per_hour}</span>
+                        <span className="font-semibold">₹{space.price_per_hour}</span>
                         <span className="text-sm text-gray-600">/hr</span>
                       </div>
                       {space.price_per_day && (
-                        <div className="flex items-center text-sm text-gray-600">${space.price_per_day}/day</div>
+                        <div className="flex items-center text-sm text-gray-600">₹{space.price_per_day}/day</div>
                       )}
                     </div>
                     <div className="text-sm text-gray-600">
